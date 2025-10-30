@@ -9,6 +9,7 @@ interface DashboardProps {
   nutritionGoals: NutritionGoals;
   onOpenModal: (type: ModalType) => void;
   onRemoveFoodItem: (index: number) => void;
+  isAiAvailable: boolean;
 }
 
 const StatCard: React.FC<{ title: string; value: string | number; unit: string; }> = ({ title, value, unit }) => (
@@ -41,7 +42,7 @@ const MacroProgressBar: React.FC<{
 };
 
 
-const Dashboard: React.FC<DashboardProps> = ({ userProfile, foodLog, nutritionGoals, onOpenModal, onRemoveFoodItem }) => {
+const Dashboard: React.FC<DashboardProps> = ({ userProfile, foodLog, nutritionGoals, onOpenModal, onRemoveFoodItem, isAiAvailable }) => {
 
   const totals = useMemo(() => {
     return foodLog.reduce(
@@ -128,15 +129,29 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, foodLog, nutritionGo
                 <h3 className="text-xl font-semibold text-slate-800 mb-4">הוספת ארוחה</h3>
                 <p className="text-slate-500 mb-6">הוסף את הארוחה שלך בצורה ידנית או בעזרת המצלמה.</p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                    <button onClick={() => onOpenModal('manual')} className="w-full flex items-center justify-center gap-2 p-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition font-semibold">
+                    <button 
+                        onClick={() => onOpenModal('manual')} 
+                        disabled={!isAiAvailable}
+                        title={!isAiAvailable ? "יש להגדיר מפתח API של Gemini כדי להשתמש בתכונה זו" : "הוסף פריט מזון לפי תיאור טקסט"}
+                        className="w-full flex items-center justify-center gap-2 p-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition font-semibold disabled:bg-slate-300 disabled:cursor-not-allowed">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h.01"/><path d="M11 6.16A5.84 5.84 0 0 0 11 12a6 6 0 0 0 6 6h.01"/><path d="M12 12a6 6 0 0 1 6-6h.01"/><path d="M6 12a6 6 0 0 1 6-6h.01"/><path d="M17.84 18a5.84 5.84 0 0 0 0-11.68"/><path d="M12 6a6 6 0 0 0-6 6h.01"/></svg>
                         הוספה ידנית
                     </button>
-                    <button onClick={() => onOpenModal('image')} className="w-full flex items-center justify-center gap-2 p-3 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition font-semibold">
+                    <button 
+                        onClick={() => onOpenModal('image')}
+                        disabled={!isAiAvailable}
+                        title={!isAiAvailable ? "יש להגדיר מפתח API של Gemini כדי להשתמש בתכונה זו" : "נתח תמונה של ארוחה"}
+                        className="w-full flex items-center justify-center gap-2 p-3 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition font-semibold disabled:bg-slate-300 disabled:cursor-not-allowed">
                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
                         זיהוי מתמונה
                     </button>
                 </div>
+                {!isAiAvailable && (
+                    <div className="mt-4 text-center text-sm text-amber-800 bg-amber-100 p-3 rounded-lg border border-amber-200">
+                        <strong>תכונות ה-AI מושבתות.</strong>
+                        <p>כדי להפעילן, יש להגדיר מפתח API של Gemini בסביבת הפרויקט.</p>
+                    </div>
+                )}
             </div>
         </Card>
       </div>

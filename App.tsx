@@ -21,6 +21,9 @@ const App: React.FC = () => {
   
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const ai = process.env.API_KEY ? new GoogleGenAI({ apiKey: process.env.API_KEY }) : null;
+  const isAiAvailable = !!ai;
   
   // Reset food log when active user changes
   useEffect(() => {
@@ -68,9 +71,19 @@ const App: React.FC = () => {
   const handleAddNewUser = () => {
     setShowOnboarding(true);
   }
-
-  const ai = process.env.API_KEY ? new GoogleGenAI({ apiKey: process.env.API_KEY }) : null;
   
+  const handleDeleteUser = (userId: string) => {
+    // Remove user profile
+    setRegisteredUsers(prev => prev.filter(user => user.id !== userId));
+
+    // Remove all food logs for that user from localStorage
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith(`foodLog-${userId}-`)) {
+        localStorage.removeItem(key);
+      }
+    });
+  };
+
   const renderContent = () => {
     if (activeUser) {
       return (
@@ -81,6 +94,7 @@ const App: React.FC = () => {
               nutritionGoals={nutritionGoals}
               onOpenModal={setActiveModal}
               onRemoveFoodItem={removeFoodItem}
+              isAiAvailable={isAiAvailable}
             />
             {ai && (
               <>
@@ -110,7 +124,7 @@ const App: React.FC = () => {
       return <Onboarding onComplete={handleOnboardingComplete} />;
     }
     
-    return <UserSelection users={registeredUsers} onSelectUser={handleSelectUser} onAddNewUser={handleAddNewUser} />;
+    return <UserSelection users={registeredUsers} onSelectUser={handleSelectUser} onAddNewUser={handleAddNewUser} onDeleteUser={handleDeleteUser} />;
   }
 
   return (
