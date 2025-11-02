@@ -9,7 +9,8 @@ interface DashboardProps {
   nutritionGoals: NutritionGoals;
   onOpenModal: (type: ModalType) => void;
   onRemoveFoodItem: (index: number) => void;
-  isAiAvailable: boolean;
+  selectedDate: string;
+  onDateChange: (date: string) => void;
 }
 
 const StatCard: React.FC<{ title: string; value: string | number; unit: string; }> = ({ title, value, unit }) => (
@@ -41,8 +42,27 @@ const MacroProgressBar: React.FC<{
   );
 };
 
+const formatDateDisplay = (dateString: string): string => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const date = new Date(dateString);
+    date.setHours(0, 0, 0, 0);
 
-const Dashboard: React.FC<DashboardProps> = ({ userProfile, foodLog, nutritionGoals, onOpenModal, onRemoveFoodItem, isAiAvailable }) => {
+    if (date.getTime() === today.getTime()) {
+        return 'סיכום יומי';
+    }
+    
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (date.getTime() === yesterday.getTime()) {
+        return 'אתמול';
+    }
+    
+    return new Intl.DateTimeFormat('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+};
+
+
+const Dashboard: React.FC<DashboardProps> = ({ userProfile, foodLog, nutritionGoals, onOpenModal, onRemoveFoodItem, selectedDate, onDateChange }) => {
 
   const totals = useMemo(() => {
     return foodLog.reduce(
@@ -65,13 +85,30 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, foodLog, nutritionGo
     { name: 'פחמימות', value: totals.carbs, goal: nutritionGoals.carbs, fill: '#10b981', colorClass: 'bg-emerald-500' },
     { name: 'שומן', value: totals.fat, goal: nutritionGoals.fat, fill: '#f59e0b', colorClass: 'bg-amber-500' },
   ];
+  
+  const today = new Date().toISOString().split('T')[0];
+  const isToday = selectedDate === today;
+
+  const handleDateChange = (days: number) => {
+    const currentDate = new Date(selectedDate + 'T00:00:00Z'); // Treat string as UTC to avoid timezone issues
+    currentDate.setUTCDate(currentDate.getUTCDate() + days);
+    onDateChange(currentDate.toISOString().split('T')[0]);
+  };
 
   return (
     <div className="space-y-6">
       <Card>
         <div className="p-6">
-            <h2 className="text-2xl font-bold text-slate-800">סיכום יומי</h2>
-            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="flex justify-between items-center mb-4">
+              <button onClick={() => handleDateChange(-1)} className="p-2 rounded-full hover:bg-slate-100 transition-colors" aria-label="היום הקודם">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              </button>
+              <h2 className="text-2xl font-bold text-slate-800">{formatDateDisplay(selectedDate)}</h2>
+              <button onClick={() => handleDateChange(1)} disabled={isToday} className="p-2 rounded-full hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" aria-label="היום הבא">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatCard title="יעד קלורי" value={nutritionGoals.tdee} unit="קל'" />
                 <StatCard title="נצרך" value={totals.calories.toFixed(0)} unit="קל'" />
                 <StatCard title="נותר" value={caloriesRemaining.toFixed(0)} unit="קל'" />
@@ -129,29 +166,16 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, foodLog, nutritionGo
                 <h3 className="text-xl font-semibold text-slate-800 mb-4">הוספת ארוחה</h3>
                 <p className="text-slate-500 mb-6">הוסף את הארוחה שלך בצורה ידנית או בעזרת המצלמה.</p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                    <button 
-                        onClick={() => onOpenModal('manual')} 
-                        disabled={!isAiAvailable}
-                        title={!isAiAvailable ? "יש להגדיר מפתח API של Gemini כדי להשתמש בתכונה זו" : "הוסף פריט מזון לפי תיאור טקסט"}
-                        className="w-full flex items-center justify-center gap-2 p-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition font-semibold disabled:bg-slate-300 disabled:cursor-not-allowed">
+                    <button onClick={() => onOpenModal('manual')} disabled={!isToday} className="w-full flex items-center justify-center gap-2 p-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition font-semibold disabled:bg-slate-400 disabled:cursor-not-allowed">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h.01"/><path d="M11 6.16A5.84 5.84 0 0 0 11 12a6 6 0 0 0 6 6h.01"/><path d="M12 12a6 6 0 0 1 6-6h.01"/><path d="M6 12a6 6 0 0 1 6-6h.01"/><path d="M17.84 18a5.84 5.84 0 0 0 0-11.68"/><path d="M12 6a6 6 0 0 0-6 6h.01"/></svg>
                         הוספה ידנית
                     </button>
-                    <button 
-                        onClick={() => onOpenModal('image')}
-                        disabled={!isAiAvailable}
-                        title={!isAiAvailable ? "יש להגדיר מפתח API של Gemini כדי להשתמש בתכונה זו" : "נתח תמונה של ארוחה"}
-                        className="w-full flex items-center justify-center gap-2 p-3 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition font-semibold disabled:bg-slate-300 disabled:cursor-not-allowed">
+                    <button onClick={() => onOpenModal('image')} disabled={!isToday} className="w-full flex items-center justify-center gap-2 p-3 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition font-semibold disabled:bg-slate-400 disabled:cursor-not-allowed">
                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
                         זיהוי מתמונה
                     </button>
                 </div>
-                {!isAiAvailable && (
-                    <div className="mt-4 text-center text-sm text-amber-800 bg-amber-100 p-3 rounded-lg border border-amber-200">
-                        <strong>תכונות ה-AI מושבתות.</strong>
-                        <p>כדי להפעילן, יש להגדיר מפתח API של Gemini בסביבת הפרויקט.</p>
-                    </div>
-                )}
+                {!isToday && <p className="text-center text-sm text-slate-500 mt-4">ניתן להוסיף אוכל רק עבור היום הנוכחי.</p>}
             </div>
         </Card>
       </div>
@@ -169,14 +193,16 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, foodLog, nutritionGo
                             {item.calories.toFixed(0)} קל' &bull; {item.protein.toFixed(0)}ח &bull; {item.carbs.toFixed(0)}פ &bull; {item.fat.toFixed(0)}ש
                         </p>
                     </div>
-                    <button onClick={() => onRemoveFoodItem(index)} className="text-red-500 hover:text-red-700 p-1">
+                    <button onClick={() => onRemoveFoodItem(index)} disabled={!isToday} className="text-red-500 hover:text-red-700 p-1 disabled:text-slate-400 disabled:cursor-not-allowed">
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     </button>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-center text-slate-500 py-4">עדיין לא הוספת שום דבר היום.</p>
+            <p className="text-center text-slate-500 py-4">
+              {isToday ? "עדיין לא הוספת שום דבר היום." : `לא נרשם אוכל בתאריך זה.`}
+            </p>
           )}
         </div>
       </Card>

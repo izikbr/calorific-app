@@ -15,26 +15,14 @@ const App: React.FC = () => {
   const [activeUser, setActiveUser] = useState<UserProfile | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   
-  const today = new Date().toISOString().split('T')[0];
-  const foodLogKey = activeUser ? `foodLog-${activeUser.id}-${today}` : '';
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const [selectedDate, setSelectedDate] = useState<string>(today);
+
+  const foodLogKey = activeUser ? `foodLog-${activeUser.id}-${selectedDate}` : '';
   const [foodLog, setFoodLog] = useLocalStorage<FoodItem[]>(foodLogKey, []);
   
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  const ai = process.env.API_KEY ? new GoogleGenAI({ apiKey: process.env.API_KEY }) : null;
-  const isAiAvailable = !!ai;
-  
-  // Reset food log when active user changes
-  useEffect(() => {
-    if (activeUser) {
-      const newKey = `foodLog-${activeUser.id}-${today}`;
-      const storedData = localStorage.getItem(newKey);
-      setFoodLog(storedData ? JSON.parse(storedData) : []);
-    } else {
-      setFoodLog([]);
-    }
-  }, [activeUser, today]);
 
   const nutritionGoals = useMemo(() => {
     if (activeUser) {
@@ -66,24 +54,15 @@ const App: React.FC = () => {
   
   const handleSelectUser = (user: UserProfile) => {
     setActiveUser(user);
+    setSelectedDate(today);
   }
   
   const handleAddNewUser = () => {
     setShowOnboarding(true);
   }
+
+  const ai = process.env.API_KEY ? new GoogleGenAI({ apiKey: process.env.API_KEY }) : null;
   
-  const handleDeleteUser = (userId: string) => {
-    // Remove user profile
-    setRegisteredUsers(prev => prev.filter(user => user.id !== userId));
-
-    // Remove all food logs for that user from localStorage
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith(`foodLog-${userId}-`)) {
-        localStorage.removeItem(key);
-      }
-    });
-  };
-
   const renderContent = () => {
     if (activeUser) {
       return (
@@ -94,7 +73,8 @@ const App: React.FC = () => {
               nutritionGoals={nutritionGoals}
               onOpenModal={setActiveModal}
               onRemoveFoodItem={removeFoodItem}
-              isAiAvailable={isAiAvailable}
+              selectedDate={selectedDate}
+              onDateChange={setSelectedDate}
             />
             {ai && (
               <>
@@ -124,7 +104,7 @@ const App: React.FC = () => {
       return <Onboarding onComplete={handleOnboardingComplete} />;
     }
     
-    return <UserSelection users={registeredUsers} onSelectUser={handleSelectUser} onAddNewUser={handleAddNewUser} onDeleteUser={handleDeleteUser} />;
+    return <UserSelection users={registeredUsers} onSelectUser={handleSelectUser} onAddNewUser={handleAddNewUser} />;
   }
 
   return (
