@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import Onboarding from './components/Onboarding';
 import Dashboard from './components/Dashboard';
@@ -15,8 +15,7 @@ const App: React.FC = () => {
   const [activeUser, setActiveUser] = useState<UserProfile | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   
-  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
-  const [selectedDate, setSelectedDate] = useState<string>(today);
+  const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
   const foodLogKey = activeUser ? `foodLog-${activeUser.id}-${selectedDate}` : '';
   const [foodLog, setFoodLog] = useLocalStorage<FoodItem[]>(foodLogKey, []);
@@ -54,7 +53,7 @@ const App: React.FC = () => {
   
   const handleSelectUser = (user: UserProfile) => {
     setActiveUser(user);
-    setSelectedDate(today);
+    setSelectedDate(new Date().toISOString().split('T')[0]);
   }
   
   const handleAddNewUser = () => {

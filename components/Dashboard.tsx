@@ -45,8 +45,11 @@ const MacroProgressBar: React.FC<{
 const formatDateDisplay = (dateString: string): string => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const date = new Date(dateString);
-    date.setHours(0, 0, 0, 0);
+
+    // The 'YYYY-MM-DD' format is parsed as UTC midnight by default in many JS engines.
+    // To ensure a correct comparison with the local `today`, we explicitly construct the 
+    // date object in the local timezone by appending the time part.
+    const date = new Date(dateString + 'T00:00:00');
 
     if (date.getTime() === today.getTime()) {
         return 'סיכום יומי';
